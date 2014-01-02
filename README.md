@@ -1,2 +1,2 @@
-singularity-base
+Singularity
 ================
