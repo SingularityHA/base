@@ -1,6 +1,5 @@
 # Specific stuff
-modules/processing/codes.py
-modules/433mhz/codes.py
+config.ini
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -36,3 +35,5 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+modules/
