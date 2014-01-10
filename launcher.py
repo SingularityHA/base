@@ -15,5 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import modules_loader
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 modules_loader.main()

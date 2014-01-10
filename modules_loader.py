@@ -19,13 +19,16 @@ import signal
 import sys
 import time
 from multiprocessing import Process
+import logging
 
 
 def main():
+	logger = logging.getLogger(__name__)
+	logger.info("Loading modules...")
 	jobs = []
 	for root, dirs, files in os.walk('modules'):
         	for dir in dirs:
-                	print dir
+                	logger.debug("Loading module: " + dir)
 	                module = getattr(__import__("modules." + dir), dir)
         	        func = getattr(module, "main", None)
 	                if func:
@@ -37,7 +40,7 @@ def main():
 	print jobs
 
 	def signal_handler(signal, frame):
-       		print "Got CTL+C"
+       		logger.info("Got CTL+C")
        		for job in jobs:
        	        	job.terminate()
 	       	        job.join()

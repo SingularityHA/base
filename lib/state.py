@@ -13,3 +13,53 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from peewee import *
+import datetime
+import time
+
+our_db = SqliteDatabase('test.db')
+
+class StateModel(Model):
+    class Meta:
+        database = our_db
+
+class StateTable(StateModel):
+	device = CharField(max_length=255)
+	state = CharField(max_length=255)
+	attributes = TextField(null = True)
+	lock = BooleanField(default = 0)
+	lastChange = DateTimeField(default=datetime.datetime.now)
+
+our_db.connect()
+#StateTable.create_table()
+
+def set(device, state, attributes=None):
+	acquire_lock(device)
+	state_object = StateTable()
+	state_object.device = device
+	state_object.state = state
+	state_object.attributes = attributes
+	state_object.save()
+	release_lock(device)
+
+def get(device):
+	state = StateTable.select().where(StateTable.device == device).get()
+	return(state)
+
+def acquire_lock(device):
+	while True:
+		print "Attempting to acquire lock"
+		if StateTable.select().where(StateTable.device == device).get().lock == False:
+			stateObj = StateTable.select().where(StateTable.device == device).get()
+			stateObj.lock = True
+			stateObj.save()
+			print "Got lock!"
+			break
+		time.sleep(1)
+
+def release_lock(device):
+	stateObj = StateTable.select().where(StateTable.device == device).get()
+        stateObj.lock = False
+        stateObj.save()
+	print "Lock released!"
+
