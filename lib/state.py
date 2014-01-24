@@ -16,13 +16,13 @@
 from peewee import *
 import datetime
 import time
-import config
+from config import config
 
 server = config.get("database", "host")
 username = config.get("database", "username")
 password = config.get("database", "password")
 database = config.get("database", "database")
-our_db = MySQLDatabase(host=server,user=username,passwd=password,db=database)
+our_db = MySQLDatabase(database,host=server,user=username,passwd=password)
 
 class StateModel(Model):
     class Meta:
@@ -38,7 +38,11 @@ class StateTable(StateModel):
 our_db.connect()
 
 def set(device, state, attributes=None):
-	acquire_lock(device)
+	try:
+		acquire_lock(device)
+	except:
+		#state object doesn't exist yet
+		pass
 	state_object = StateTable()
 	state_object.device = device
 	state_object.state = state

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # SingularityHA
 # Copyright (C) 2014 Internet by Design Ltd
 #
