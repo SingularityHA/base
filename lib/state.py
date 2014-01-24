@@ -16,8 +16,13 @@
 from peewee import *
 import datetime
 import time
+import config
 
-our_db = SqliteDatabase('test.db')
+server = config.get("database", "host")
+username = config.get("database", "username")
+password = config.get("database", "password")
+database = config.get("database", "database")
+our_db = MySQLDatabase(host=server,user=username,passwd=password,db=database)
 
 class StateModel(Model):
     class Meta:
@@ -31,7 +36,6 @@ class StateTable(StateModel):
 	lastChange = DateTimeField(default=datetime.datetime.now)
 
 our_db.connect()
-#StateTable.create_table()
 
 def set(device, state, attributes=None):
 	acquire_lock(device)
