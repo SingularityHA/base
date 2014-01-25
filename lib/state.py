@@ -1,29 +1,31 @@
-# SingularityHA
-# Copyright (C) 2014 Internet by Design Ltd
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+    SingularityHA
+    ~~~~~~~~~~~~~~~~~~~~~
+
+    State storage into MySQL
+
+    :copyright: (c) 2013 - by Internet by Design Ltd
+    :license: GPL v3, see LICENSE for more details.
+
+"""
 from peewee import *
 import datetime
 import time
 from config import config
 
+# Pulls configuration from the config module
 server = config.get("database", "host")
 username = config.get("database", "username")
 password = config.get("database", "password")
 database = config.get("database", "database")
 our_db = MySQLDatabase(database,host=server,user=username,passwd=password)
 
+# Start up logging
+logger = logging.getLogger(__name__)
+logger.info("State library started...")
+
+
+# This is the definition of the database model
 class StateModel(Model):
     class Meta:
         database = our_db
@@ -38,6 +40,7 @@ class StateTable(StateModel):
 our_db.connect()
 
 def set(device, state, attributes=None):
+	""" Set the state of the specified device"""
 	try:
 		acquire_lock(device)
 	except:
@@ -51,23 +54,27 @@ def set(device, state, attributes=None):
 	release_lock(device)
 
 def get(device):
+	""" Simple function to pull the state of a device from the DB """
 	state = StateTable.select().where(StateTable.device == device).get()
 	return(state)
 
 def acquire_lock(device):
+	""" Get lock over the state of a device to prevent clashes """
+	loggger.debug("attempting to get lock for device" + device)
 	while True:
-		print "Attempting to acquire lock"
 		if StateTable.select().where(StateTable.device == device).get().lock == False:
 			stateObj = StateTable.select().where(StateTable.device == device).get()
 			stateObj.lock = True
 			stateObj.save()
-			print "Got lock!"
+			loggger.debug("got lock for device" + device)
 			break
 		time.sleep(1)
 
 def release_lock(device):
+	""" Unlock once we have finished editing the state """
 	stateObj = StateTable.select().where(StateTable.device == device).get()
         stateObj.lock = False
         stateObj.save()
-	print "Lock released!"
+	loggger.debug("released lock for device" + device)
+
 
