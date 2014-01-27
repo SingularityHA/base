@@ -12,6 +12,7 @@ from peewee import *
 import datetime
 import time
 from config import config
+import logging
 
 # Pulls configuration from the config module
 server = config.get("database", "host")
