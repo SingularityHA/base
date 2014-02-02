@@ -18,10 +18,13 @@ modules = {}
 for module in r['objects']:
 	payload = {'format': 'json', 'name': module['name']}
 	moduleData = json.loads(requests.get("http://" + config.get("general", "confighost") + "/api/v1/module_list/", params=payload).text)['objects'][0]
-        modules[module['id']] =  { "name" : module['name'], "package" : moduleData["package"], "config" : moduleData["config"] };
+        modules[module['id']] =  { "name" : module['name'], "package" : moduleData["package"], "config" : module["config"] };
 modules_list = ""
 for moduleID, moduleInfo in modules.iteritems():
-#	Repo.clone_from(moduleInfo['package'], "modules/" + str(moduleInfo['name']))
+	try:
+		Repo.clone_from(moduleInfo['package'], "modules/" + str(moduleInfo['name']))
+	except:
+		print "Error cloning " + str(moduleInfo['name'])
 	module = str(moduleInfo['name'])
 	if moduleInfo['config']:
 		configSplit = moduleInfo['config'].split("=")
