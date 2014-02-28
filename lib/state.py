@@ -20,7 +20,7 @@ server = config.get("database", "host")
 username = config.get("database", "username")
 password = config.get("database", "password")
 database = config.get("database", "database")
-our_db = MySQLDatabase(database,host=server,user=username,passwd=password)
+our_db = MySQLDatabase(database, host=server, user=username, passwd=password)
 
 # Start up logging
 #logger = logging.getLogger(__name__)
@@ -32,59 +32,66 @@ class StateModel(Model):
     class Meta:
         database = our_db
 
+
 class StateTable(StateModel):
-	device = CharField(max_length=255)
-	state = CharField(max_length=255)
-	attributes = TextField(null = True)
-	lock = BooleanField(default = 0)
-	lastChange = DateTimeField(default=datetime.datetime.now)
+    device = CharField(max_length=255)
+    state = CharField(max_length=255)
+    attributes = TextField(null=True)
+    lock = BooleanField(default=0)
+    lastChange = DateTimeField(default=datetime.datetime.now)
+
 
 our_db.connect()
 
-def set(device, state, attributes=None):
-	""" Set the state of the specified device"""
-	try:
-		acquire_lock(device)
-	except:
-		#state object doesn't exist yet
-		pass
-	try:
-		state_object = StateTable.select().where(StateTable.device == device).get()
-	except:
-		state_object = StateTable()
 
-	state_object.device = device
-	state_object.state = state
-	state_object.attributes = attributes
-	state_object.save()
-	release_lock(device)
+def put(device, state, attributes=None):
+    """ Set the state of the specified device"""
+    try:
+        acquire_lock(device)
+    except:
+        #state object doesn't exist yet
+        pass
+    try:
+        state_object = StateTable.select().where(StateTable.device == device).get()
+    except:
+        state_object = StateTable()
+
+    state_object.device = device
+    state_object.state = state
+    state_object.attributes = attributes
+    state_object.save()
+    release_lock(device)
+
 
 def get(device):
-	""" Simple function to pull the state of a device from the DB """
-	try:
-		state = StateTable.select().where(StateTable.device == device).get()
-		state.attributes = json.loads(state.attributes)
-	except:
-		state = {}
-	return(state)
+    """ Simple function to pull the state of a device from the DB """
+    try:
+        state = StateTable.select().where(StateTable.device == device).get()
+        state.attributes = json.loads(state.attributes)
+    except:
+        state = {}
+    return state
+
 
 def acquire_lock(device):
-	""" Get lock over the state of a device to prevent clashes """
-#	loggger.debug("attempting to get lock for device" + device)
-	while True:
-		if StateTable.select().where(StateTable.device == device).get().lock == False:
-			stateObj = StateTable.select().where(StateTable.device == device).get()
-			stateObj.lock = True
-			stateObj.save()
-#			loggger.debug("got lock for device" + device)
-			break
-		time.sleep(1)
+    """ Get lock over the state of a device to prevent clashes """
+    #	loggger.debug("attempting to get lock for device" + device)
+    while True:
+        if not StateTable.select().where(StateTable.device == device).get().lock:
+            state_obj = StateTable.select().where(StateTable.device == device).get()
+            state_obj.lock = True
+            state_obj.save()
+            #			loggger.debug("got lock for device" + device)
+            break
+        time.sleep(1)
+
 
 def release_lock(device):
-	""" Unlock once we have finished editing the state """
-	stateObj = StateTable.select().where(StateTable.device == device).get()
-        stateObj.lock = False
-        stateObj.save()
+    """ Unlock once we have finished editing the state """
+    state_obj = StateTable.select().where(StateTable.device == device).get()
+    state_obj.lock = False
+    state_obj.save()
+
 #	loggger.debug("released lock for device" + device)
 
 
