@@ -32,13 +32,14 @@ our_db = MySQLDatabase(database,host=server,user=username,passwd=password)
 logger = logging.getLogger(__name__)
 logger.info("State library started...")
 
-
 # This is the definition of the database model
 class StateModel(Model):
     class Meta:
         database = our_db
 
+
 class StateTable(StateModel):
+<<<<<<< HEAD
 	device = CharField(max_length=255)
 	state = CharField(max_length=255)
 	attributes = TextField(null = True)
@@ -95,31 +96,34 @@ def set(module, device, state, attributes=None):
 	
 	
 def get(device):
-	""" Simple function to pull the state of a device from the DB """
-	try:
-		state = StateTable.select().where(StateTable.device == device).get()
-		state.attributes = json.loads(state.attributes)
-	except:
-		state = {}
-	return(state)
+    """ Simple function to pull the state of a device from the DB """
+    try:
+        state = StateTable.select().where(StateTable.device == device).get()
+        state.attributes = json.loads(state.attributes)
+    except:
+        state = {}
+    return state
+
 
 def acquire_lock(device):
-	""" Get lock over the state of a device to prevent clashes """
-#	loggger.debug("attempting to get lock for device" + device)
-	while True:
-		if StateTable.select().where(StateTable.device == device).get().lock == False:
-			stateObj = StateTable.select().where(StateTable.device == device).get()
-			stateObj.lock = True
-			stateObj.save()
-#			loggger.debug("got lock for device" + device)
-			break
-		time.sleep(1)
+    """ Get lock over the state of a device to prevent clashes """
+    #	loggger.debug("attempting to get lock for device" + device)
+    while True:
+        if not StateTable.select().where(StateTable.device == device).get().lock:
+            state_obj = StateTable.select().where(StateTable.device == device).get()
+            state_obj.lock = True
+            state_obj.save()
+            #			loggger.debug("got lock for device" + device)
+            break
+        time.sleep(1)
+
 
 def release_lock(device):
-	""" Unlock once we have finished editing the state """
-	stateObj = StateTable.select().where(StateTable.device == device).get()
-        stateObj.lock = False
-        stateObj.save()
+    """ Unlock once we have finished editing the state """
+    state_obj = StateTable.select().where(StateTable.device == device).get()
+    state_obj.lock = False
+    state_obj.save()
+
 #	loggger.debug("released lock for device" + device)
 
 

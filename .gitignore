@@ -37,3 +37,6 @@ coverage.xml
 docs/_build/
 
 modules/
+
+.idea/
+.idea/workspace.xml

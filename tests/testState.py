@@ -15,5 +15,3 @@ def testState():
 	time.sleep(2)
 	attributes['brightness'] = 0
 	state.set("LimitlessLED", "LoungeLight", "off", json.dumps(attributes))
-
-testState()
