@@ -14,17 +14,23 @@ import time
 from config import config
 import logging
 import json
+import os
+import mosquitto
+
+os.environ['TZ'] = 'Pacific/Auckland'
 
 # Pulls configuration from the config module
 server = config.get("database", "host")
 username = config.get("database", "username")
 password = config.get("database", "password")
 database = config.get("database", "database")
+broker = str(config.get("mqtt", "host"))
+port = int(config.get("mqtt", "port"))
 our_db = MySQLDatabase(database,host=server,user=username,passwd=password)
 
 # Start up logging
-#logger = logging.getLogger(__name__)
-#logger.info("State library started...")
+logger = logging.getLogger(__name__)
+logger.info("State library started...")
 
 
 # This is the definition of the database model
@@ -37,11 +43,34 @@ class StateTable(StateModel):
 	state = CharField(max_length=255)
 	attributes = TextField(null = True)
 	lock = BooleanField(default = 0)
-	lastChange = DateTimeField(default=datetime.datetime.now)
+	lastChange = DateTimeField(default=datetime.datetime.now())
 
 our_db.connect()
 
-def set(device, state, attributes=None):
+def on_connect(rc):
+        if rc == 0:
+                #rc 0 successful connect
+                logger.debug("State connected to MQTT")
+        else:
+                raise Exception
+
+
+def on_publish(val):
+        logger.debug("Published state", val)
+	print "published"
+def cleanup():
+        ser.close()
+        mqttc.disconnect()
+
+mypid = os.getpid()
+client_uniq = "arduino_pub_"+str(mypid)
+mqttc = mosquitto.Mosquitto(client_uniq)
+
+mqttc.on_connect = on_connect
+mqttc.on_publish = on_publish
+mqttc.connect(broker, port, 60, True)
+
+def set(module, device, state, attributes=None):
 	""" Set the state of the specified device"""
 	try:
 		acquire_lock(device)
@@ -56,9 +85,15 @@ def set(device, state, attributes=None):
 	state_object.device = device
 	state_object.state = state
 	state_object.attributes = attributes
+	state_object.lastChange = datetime.datetime.now()
 	state_object.save()
 	release_lock(device)
 
+	attributes_mqtt = {"device" : device, "module" : module, "state" : state, "attributes" : json.loads(attributes)}
+
+	mqttc.publish("state", json.dumps(attributes_mqtt))
+	
+	
 def get(device):
 	""" Simple function to pull the state of a device from the DB """
 	try:
