@@ -26,7 +26,7 @@ password = config.get("database", "password")
 database = config.get("database", "database")
 broker = str(config.get("mqtt", "host"))
 port = int(config.get("mqtt", "port"))
-our_db = MySQLDatabase(database,host=server,user=username,passwd=password)
+our_db = MySQLDatabase(database, host=server, user=username, passwd=password)
 
 # Start up logging
 logger = logging.getLogger(__name__)
@@ -39,28 +39,30 @@ class StateModel(Model):
 
 
 class StateTable(StateModel):
-	device = CharField(max_length=255)
-	state = CharField(max_length=255)
-	attributes = TextField(null = True)
-	lock = BooleanField(default = 0)
-	lastChange = DateTimeField(default=datetime.datetime.now())
+    device = CharField(max_length=255)
+    state = CharField(max_length=255)
+    attributes = TextField(null=True)
+    lock = BooleanField(default=0)
+    lastChange = DateTimeField(default=datetime.datetime.now())
 
 our_db.connect()
 
+
 def on_connect(rc):
-        if rc == 0:
-                #rc 0 successful connect
-                logger.debug("State connected to MQTT")
-        else:
-                raise Exception
+    if rc == 0:
+        #rc 0 successful connect
+        logger.debug("State connected to MQTT")
+    else:
+        raise Exception
 
 
 def on_publish(val):
-	logger.debug("published")
+    logger.debug("published")
 
 def cleanup():
-        ser.close()
-        mqttc.disconnect()
+    ser.close()
+    mqttc.disconnect()
+
 
 def on_disconnect(mosq, obj, rc):
     print("Disconnected successfully.")
@@ -73,6 +75,7 @@ mqttc.on_connect = on_connect
 mqttc.on_publish = on_publish
 mqttc.on_disconnect = on_disconnect
 mqttc.connect(broker, port, 60, True)
+
 
 def set(module, device, state, attributes=None):
 	""" Set the state of the specified device"""
@@ -96,7 +99,6 @@ def set(module, device, state, attributes=None):
 	attributes_mqtt = {"device" : device, "module" : module, "state" : state, "attributes" : json.loads(attributes)}
 	print attributes_mqtt
 	mqttc.publish("state", json.dumps(attributes_mqtt))
-	
 	
 def get(device):
     """ Simple function to pull the state of a device from the DB """
