@@ -39,7 +39,6 @@ class StateModel(Model):
 
 
 class StateTable(StateModel):
-<<<<<<< HEAD
 	device = CharField(max_length=255)
 	state = CharField(max_length=255)
 	attributes = TextField(null = True)
@@ -57,18 +56,22 @@ def on_connect(rc):
 
 
 def on_publish(val):
-        logger.debug("Published state", val)
-	print "published"
+	logger.debug("published")
+
 def cleanup():
         ser.close()
         mqttc.disconnect()
 
+def on_disconnect(mosq, obj, rc):
+    print("Disconnected successfully.")
+
 mypid = os.getpid()
-client_uniq = "arduino_pub_"+str(mypid)
+client_uniq = "singuarltiyHA_state"+str(mypid)
 mqttc = mosquitto.Mosquitto(client_uniq)
 
 mqttc.on_connect = on_connect
 mqttc.on_publish = on_publish
+mqttc.on_disconnect = on_disconnect
 mqttc.connect(broker, port, 60, True)
 
 def set(module, device, state, attributes=None):
@@ -89,9 +92,9 @@ def set(module, device, state, attributes=None):
 	state_object.lastChange = datetime.datetime.now()
 	state_object.save()
 	release_lock(device)
-
+	print "SETTING MQTT STATE"
 	attributes_mqtt = {"device" : device, "module" : module, "state" : state, "attributes" : json.loads(attributes)}
-
+	print attributes_mqtt
 	mqttc.publish("state", json.dumps(attributes_mqtt))
 	
 	
