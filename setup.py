@@ -70,7 +70,10 @@ for moduleID, moduleInfo in modules.iteritems():
         execfile(script, g)
 
     """ Remove from "to be removed" list """
-    module_dir.remove(moduleInfo['name'])
+    try:
+	module_dir.remove(moduleInfo['name'])
+    except:
+        pass
 
 """ Drop old modules """
 for path in module_dir:
