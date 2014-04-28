@@ -7,12 +7,13 @@
     :license: GPL v3, see LICENSE for more details.
 
 """
-import socket
-import requests
-import sys
-import os
-import json
 from git import Repo
+import json
+import os
+import requests
+import shutil
+import socket
+import sys
 from lib import state
 from lib.config import config
 
@@ -30,6 +31,13 @@ for module in r['objects']:  # Loop through modules the server says we should ha
         requests.get("http://" + config.get("general", "confighost") + "/api/v1/module_list/", params=payload).text)[
         'objects'][0]  # Pull config options and build a modules list
     modules[module['id']] = {"name": module['name'], "package": moduleData["package"], "config": module["config"]}
+
+""" Get list of currently installed modules so we can remove ones that have been removed """
+module_dir = []
+for root, dirs, files in os.walk('modules'):
+    for dir in dirs:
+        module_dir.append(dir)
+    dirs[:] = []  # don't recurse into directories.
 
 """ Run various operations to install modules """
 modules_list = ""
@@ -55,9 +63,20 @@ for moduleID, moduleInfo in modules.iteritems():
     target.close()
 
     """ Exec the module's own setup file """
-    if os.path.isfile(os.path.join(root, module, "setup.py")):
-        execfile(os.path.join(root, module, "setup.py"))
+    script = os.path.join(root, module, "setup.py")
+    if os.path.isfile(script):
+        g = globals().copy()
+        g['__file__'] = script
+        execfile(script, g)
+
+    """ Remove from "to be removed" list """
+    module_dir.remove(moduleInfo['name'])
+
+""" Drop old modules """
+for path in module_dir:
+	shutil.rmtree("modules/" + path)
 
 """ Write out config file with new module options """
 with open(os.path.dirname(os.path.realpath(__file__)) + '/config.ini', 'wb') as configfile:
     config.write(configfile)
+
