@@ -37,7 +37,6 @@ class StateModel(Model):
     class Meta:
         database = our_db
 
-
 class StateTable(StateModel):
     device = CharField(max_length=255)
     state = CharField(max_length=255)
@@ -47,16 +46,14 @@ class StateTable(StateModel):
 
 our_db.connect()
 
-
-def on_connect(rc):
+def on_connect(mosq, obj, rc):
     if rc == 0:
         #rc 0 successful connect
         logger.debug("State connected to MQTT")
     else:
         raise Exception
 
-
-def on_publish(val):
+def on_publish(mosq, obj, val):
     logger.debug("published")
 
 def cleanup():
@@ -94,11 +91,13 @@ def set(module, device, state, attributes=None):
 	state_object.attributes = attributes
 	state_object.lastChange = datetime.datetime.now()
 	state_object.save()
+	logger.debug("Setting state for", device, "with state", state, "and attributes", attributes)
 	release_lock(device)
-	print "SETTING MQTT STATE"
+	logger.debug("SETTING MQTT STATE")
 	attributes_mqtt = {"device" : device, "module" : module, "state" : state, "attributes" : json.loads(attributes)}
-	print attributes_mqtt
+	logger.debug("MQTT:", attributes_mqtt)
 	mqttc.publish("state", json.dumps(attributes_mqtt))
+
 	
 def get(device):
     """ Simple function to pull the state of a device from the DB """
@@ -112,13 +111,13 @@ def get(device):
 
 def acquire_lock(device):
     """ Get lock over the state of a device to prevent clashes """
-    #	loggger.debug("attempting to get lock for device" + device)
+    loggger.debug("attempting to get lock for device" + device)
     while True:
         if not StateTable.select().where(StateTable.device == device).get().lock:
             state_obj = StateTable.select().where(StateTable.device == device).get()
             state_obj.lock = True
             state_obj.save()
-            #			loggger.debug("got lock for device" + device)
+            loggger.debug("got lock for device" + device)
             break
         time.sleep(1)
 
@@ -129,6 +128,6 @@ def release_lock(device):
     state_obj.lock = False
     state_obj.save()
 
-#	loggger.debug("released lock for device" + device)
+    loggger.debug("released lock for device" + device)
 
 

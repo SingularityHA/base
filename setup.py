@@ -50,12 +50,15 @@ for moduleID, moduleInfo in modules.iteritems():
 
     """ Import config for the module if it exists """
     if moduleInfo['config']:
-        configSplit = moduleInfo['config'].split("=")
+        configSplit = moduleInfo['config'].split("\r\n")
+	print configSplit
         try:
             config.add_section(module)
         except:
             pass
-        config.set(module, str(configSplit[0]).strip(), configSplit[1])
+	for configLine in configSplit:
+		configSplitNow = configLine.split("=")
+	        config.set(module, str(configSplitNow[0]).strip(), configSplitNow[1])
 
     """ Write out an ID to the module folder for it's own setup to use """
     target = open("modules/" + module + "/id.txt", 'w')
