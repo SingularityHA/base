@@ -91,7 +91,7 @@ def set(module, device, state, attributes=None):
 	state_object.attributes = attributes
 	state_object.lastChange = datetime.datetime.now()
 	state_object.save()
-	logger.debug("Setting state for", device, "with state", state, "and attributes", attributes)
+	logger.debug("Setting state for" + str(device) + "with state" + str(state) + "and attributes" + str(attributes))
 	release_lock(device)
 	logger.debug("SETTING MQTT STATE")
 	attributes_mqtt = {"device" : device, "module" : module, "state" : state, "attributes" : json.loads(attributes)}
@@ -127,7 +127,5 @@ def release_lock(device):
     state_obj = StateTable.select().where(StateTable.device == device).get()
     state_obj.lock = False
     state_obj.save()
-
-    loggger.debug("released lock for device" + device)
 
 
